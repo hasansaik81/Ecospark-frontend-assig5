@@ -1,10 +1,7 @@
 
 
-
-
-//import Navbar fr om '@/components/shared/Navbar'
+// import { Navbar } from '@/components/shared/Navbar'
 import Navbar from '@/components/shared/Navbar'
-// import { Navbar } from "@/components/Navbar";
 import React from 'react'
 
 const CommonLayout = ({children}:{children:React.ReactNode}) => {
