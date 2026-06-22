@@ -1,17 +1,7 @@
-import { LoginForm } from "@/components/modules/auth/LoginForm"
+import React from 'react'
 
-
-
-
-const page = () => {
+export const page = () => {
   return (
-    <div className='container mx-auto px-4' >
-      <div className="min-h-[80vh] flex items-center justify-center">
-           <LoginForm/>
-        </div>
-      
-  </div>
+    <div>Login Page </div>
   )
 }
-
-export default page

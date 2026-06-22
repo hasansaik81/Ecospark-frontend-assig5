@@ -1,16 +1,13 @@
-// import EcoSparkHero from "@/components/modules/home/Hero";
-// import { Button } from "@/components/ui/button"
-
 import EcoSparkHero from "@/components/modules/home/Hero";
+import { Button } from "@/components/ui/button";
 
 
 export default function Home() {
   return (
-    <div>
-        <EcoSparkHero/>
+     <div className="space-y-10">
+      <EcoSparkHero/>
+  
 
-      {/* <Button>Click me</Button> */}
-    </div>
-
-);
+     </div>
+  );
 }

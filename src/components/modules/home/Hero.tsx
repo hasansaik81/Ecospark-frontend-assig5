@@ -12,7 +12,7 @@ import { ArrowRight, Leaf } from "lucide-react";
 import Link from "next/link";
 
 export default function EcoSparkHero() {
-
+  // ইকোস্পার্কের থিমের সাথে মিল রেখে ইমেজ এবং কনটেন্ট
   const slides = [
     {
       image:
