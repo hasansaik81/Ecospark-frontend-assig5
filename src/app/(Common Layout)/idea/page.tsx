@@ -1,7 +1,7 @@
 // import { IdeaCard } from '@/components/modules/idea/IdeaCard'
 import IdeaCard from '@/components/modules/idea/IdeaCard'
 import { getAllIdea } from '@/services/idea'
-import React from 'react'
+
 
 const page =async () => {
   const{data}=await getAllIdea()

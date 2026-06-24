@@ -2,9 +2,7 @@
 // // import { IdeaCard } from "@/components/modules/idea/IdeaCard";
 // // import { getAllIdea } from "@/services/idea";
 
-import EcoSparkHero from "@/components/modules/home/Hero";
-import IdeaCard from "@/components/modules/idea/IdeaCard";
-import { getAllIdea } from "@/services/idea";
+
 
 // import EcoSparkHero from "@/components/modules/home/Hero";
 // import IdeaCard from "@/components/modules/idea/IdeaCard";
@@ -110,6 +108,12 @@ import { getAllIdea } from "@/services/idea";
 // //     </div>
 // //   );
 // // }
+
+
+import EcoSparkHero from "@/components/modules/home/Hero";
+import IdeaCard from "@/components/modules/idea/IdeaCard";
+
+import { getAllIdea } from "@/services/idea";
 
 
 export default async function Home() {
