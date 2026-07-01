@@ -257,7 +257,10 @@ export function LoginForm() {
                     className="focus-visible:ring-emerald-500"
                   />
                   {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error?.message]} className="text-xs text-destructive mt-1" />
+                    <FieldError
+                      errors={fieldState.error ? [{ message: fieldState.error.message }] : undefined}
+                      className="text-xs text-destructive mt-1"
+                    />
                   )}
                 </Field>
               )}
@@ -282,7 +285,10 @@ export function LoginForm() {
                     className="focus-visible:ring-emerald-500"
                   />
                   {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error?.message]} className="text-xs text-destructive mt-1" />
+                    <FieldError
+                      errors={fieldState.error ? [{ message: fieldState.error.message }] : undefined}
+                      className="text-xs text-destructive mt-1"
+                    />
                   )}
                 </Field>
               )}

@@ -1,0 +1,341 @@
+"use client";
+
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { Lightbulb, Loader2, Clock, Vote, X, PlusCircle, History, ChevronLeft, ChevronRight } from "lucide-react";
+import { createIdea } from "@/services/idea";
+
+interface IdeaFormInput {
+  title: string;
+  description: string;
+  category: string;
+  problemStatement?: string;
+  proposedSolution?: string;
+  image?: FileList;
+}
+
+interface IdeaItem extends IdeaFormInput {
+  id?: string;
+  _id?: string;
+  author: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt?: string;
+  images?: string[];
+  votesCount?: number; // ভোট সংখ্যার জন্য
+}
+
+interface CategoryItem {
+  _id: string;
+  id?: string;
+  name: string;
+  slug?: string;
+}
+
+interface MemberStats {
+  totalIdeas: number;
+  totalVotes: number;
+}
+
+interface MemberDashboardClientProps {
+  initialStats: MemberStats | null;
+  initialIdeas: IdeaItem[];
+  categories: CategoryItem[];
+}
+
+export default function MemberDashboardClient({
+  initialStats,
+  initialIdeas,
+  categories,
+}: MemberDashboardClientProps) {
+  // 🔄 একটিভ ট্যাব স্টেট (ডিফল্টভাবে 'create' থাকবে)
+  const [activeTab, setActiveTab] = React.useState<"create" | "history">("create");
+  
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [message, setMessage] = React.useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [stats] = React.useState<MemberStats | null>(initialStats);
+  const [ideas, setIdeas] = React.useState<IdeaItem[]>(initialIdeas || []);
+  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+
+  // 📄 পেজিনেটর স্টেট (0000 layout.jpg এর চাহিদা অনুযায়ী)
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 5; // প্রতি পেজে কয়টি করে রো দেখাবে
+
+  const { register, handleSubmit, reset, formState: { errors }, setValue } = useForm<IdeaFormInput>();
+
+  const resetForm = () => {
+    reset();
+    setImagePreview(null);
+    setSelectedFile(null);
+    setMessage(null);
+  };
+
+  const onSubmitIdea = async (data: IdeaFormInput) => {
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("description", data.description);
+      formData.append("categoryId", data.category);
+      formData.append("problemStatement", data.problemStatement || "");
+      formData.append("proposedSolution", data.proposedSolution || "");
+      formData.append("paymentStatus", "FREE");
+      formData.append("price", "0");
+
+      if (selectedFile) {
+        formData.append("image", selectedFile);
+      }
+
+      const response = await createIdea(formData);
+
+      if (response && response.success) {
+        const savedIdea: IdeaItem = response.data;
+        setIdeas([savedIdea, ...ideas]);
+        setMessage({ type: "success", text: "🎉 আইডিয়াটি সফলভাবে সেভ হয়েছে!" });
+        resetForm();
+        // সফলভাবে সাবমিট হলে অটোমেটিক হিস্ট্রি ট্যাবে নিয়ে যাওয়ার জন্য নিচের লাইনটি আনকমেন্ট করতে পারেন
+        // setActiveTab("history");
+      } else {
+        setMessage({ type: "error", text: response.message || "আইডিয়া সেভ করতে সমস্যা হয়েছে।" });
+      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "কোথাও ভুল হয়েছে, আবার চেষ্টা করুন।" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage({ type: "error", text: "Image size must be less than 5MB" });
+        return;
+      }
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    setSelectedFile(null);
+    setValue("image", undefined);
+  };
+
+  // 🔢 পেজিনেশন ক্যালকুলেশন
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentIdeas = ideas.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(ideas.length / itemsPerPage);
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto p-4">
+      {/* 📊 Stats Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="p-5 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs text-gray-400 font-medium uppercase">My Total Ideas</span>
+              <p className="text-2xl font-bold mt-1 text-slate-800">{stats.totalIdeas || 0}</p>
+            </div>
+            <div className="p-3 bg-green-50 rounded-lg text-green-600"><Lightbulb className="h-5 w-5" /></div>
+          </div>
+          <div className="p-5 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs text-gray-400 font-medium uppercase">Votes Received</span>
+              <p className="text-2xl font-bold mt-1 text-sky-600">{stats.totalVotes || 0}</p>
+            </div>
+            <div className="p-3 bg-sky-50 rounded-lg text-sky-600"><Vote className="h-5 w-5" /></div>
+          </div>
+        </div>
+      )}
+
+      {/* 🎯 তালি বাটন সিস্টেম / Navigation Tabs */}
+      <div className="flex border-b border-gray-200 gap-2">
+        <button
+          onClick={() => { setActiveTab("create"); setMessage(null); }}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === "create"
+              ? "border-green-600 text-green-600 bg-green-50/30"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <PlusCircle className="h-4 w-4" />
+          Create Idea
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === "history"
+              ? "border-green-600 text-green-600 bg-green-50/30"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <History className="h-4 w-4" />
+          Idea History
+        </button>
+      </div>
+
+      {/* 💻 কন্টেন্ট সেকশন টগল */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        
+        {/* 📝 ট্যাব ১: Create Idea Form */}
+        {activeTab === "create" && (
+          <div>
+            <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-green-600" /> Share Your Green Idea
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">সবুজ পৃথিবী গড়তে আপনার মূল্যবান আইডিয়াটি ড্রপ করুন।</p>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmitIdea)} className="p-6 space-y-4 max-w-3xl">
+              {message && (
+                <div className={`p-3 rounded text-sm font-medium ${message.type === "success" ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+                  {message.text}
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-gray-700">Idea Title <span className="text-red-500">*</span></label>
+                <input {...register("title", { required: "টাইটেল দেওয়া আবশ্যক" })} type="text" placeholder="Enter idea title..." className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-gray-700">Category <span className="text-red-500">*</span></label>
+                <select {...register("category", { required: "ক্যাটাগরি সিলেক্ট করুন" })} className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="">Select Category</option>
+                  {categories?.map((cat, index) => (
+                    <option key={cat._id || cat.id || index} value={cat._id || cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-gray-700">Upload Image (Optional)</label>
+                <div className="flex items-center gap-3">
+                  <input id="image-input" type="file" accept="image/*" onChange={handleImageChange} className="flex h-10 w-full text-sm border rounded-md file:bg-gray-100 file:border-0 file:h-full file:px-4" />
+                  {imagePreview && (
+                    <div className="relative group">
+                      <img src={imagePreview} alt="Preview" className="w-12 h-12 object-cover rounded-md border" />
+                      <button type="button" onClick={removeImage} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"><X className="h-3 w-3" /></button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-gray-700">Idea Description <span className="text-red-500">*</span></label>
+                <textarea {...register("description", { required: "বিস্তারিত লিখুন" })} rows={4} placeholder="Describe your eco-friendly idea..." className="flex w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
+              </div>
+
+              <button type="submit" disabled={isSubmitting} className="bg-green-600 text-white h-10 px-4 w-full sm:w-auto sm:min-w-[150px] rounded-md text-sm font-medium shadow hover:bg-green-700 transition flex items-center justify-center">
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit Idea"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* 📊 ট্যাব ২: Idea History (আপনার ড্রয়িং ইমেজ অনুযায়ী টেবিল ফরম্যাট) */}
+        {activeTab === "history" && (
+          <div>
+            <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                <History className="h-5 w-5 text-indigo-600" /> Idea History
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">আপনার সাবমিট করা সব আইডিয়া এবং সেগুলোর বর্তমান অবস্থা এখানে দেখুন।</p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-600 uppercase text-xs font-bold border-b border-gray-200">
+                    <th className="px-6 py-4">Title</th>
+                    <th className="px-6 py-4">Tag / Category</th>
+                    <th className="px-6 py-4">Votes</th>
+                    <th className="px-6 py-4 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                  {ideas.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center py-8 text-gray-400 font-medium">
+                        কোনো আইডিয়ার ইতিহাস পাওয়া যায়নি।
+                      </td>
+                    </tr>
+                  ) : (
+                    currentIdeas.map((idea, index) => (
+                      <tr key={idea._id || idea.id || index} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="px-6 py-4 font-semibold text-gray-800">{idea.title}</td>
+                        <td className="px-6 py-4">
+                          <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-full font-medium">
+                            {idea.category || "General"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-medium text-slate-600">{idea.votesCount || 0}</td>
+                        <td className="px-6 py-4 text-right">
+                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-md border ${
+                            idea.status === "APPROVED" 
+                              ? "bg-green-50 text-green-700 border-green-200" 
+                              : idea.status === "REJECTED" 
+                              ? "bg-red-50 text-red-700 border-red-200" 
+                              : "bg-amber-50 text-amber-700 border-amber-200"
+                          }`}>
+                            {idea.status === "PENDING" && <Clock className="h-3 w-3 animate-pulse" />}
+                            {idea.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 📄 পেজিনেশন ফুটার (0000 layout.jpg এর নিখুঁত প্রতিফলন) */}
+            {ideas.length > 0 && (
+              <div className="p-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
+                <div>
+                  Showing <span className="font-semibold text-gray-700">{indexOfFirstItem + 1}</span> to{" "}
+                  <span className="font-semibold text-gray-700">{Math.min(indexOfLastItem, ideas.length)}</span> of{" "}
+                  <span className="font-semibold text-gray-700">{ideas.length}</span> results
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-gray-600">
+                    Page <span className="font-bold text-gray-800">{currentPage}</span> of {totalPages || 1}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="p-1.5 rounded-md border bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="p-1.5 rounded-md border bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,31 +1,3 @@
-// "use server"
-
-// import { cookies } from "next/headers";
-
-// export const getProfile= async () => {
-//   const store= await cookies();
-//   const token = store.get("token")?.value;
-//   try {
-//     const res = await fetch(
-//       `${process.env.NEXT_PUBLIC_BASE_URL}/users/me`,
-//       {
-//         method: "GET",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization:token!,
-//         },
-//         next: {
-//           revalidate: 3600,
-//         },
-//       },
-//     );
-//     const result = await res.json();
-
-//     return result;
-//   } catch (error: any) {
-//     return Error(error);
-//   }
-// };
 
 
 
@@ -33,7 +5,7 @@
 
 import { cookies } from "next/headers";
 
-const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}/users`;
+const BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/users`;
 
 // 🔑 কমন ফাংশন: কুকি থেকে টোকেন তুলে হেডার্স রেডি করার জন্য
 const getAuthHeaders = async () => {
