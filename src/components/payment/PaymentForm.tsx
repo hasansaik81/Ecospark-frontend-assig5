@@ -2,99 +2,104 @@
 
 
 
-// "use client";
-
-// import { createCheckoutSession } from "@/services/payment";
-
-// interface Props {
-//   ideaId: string;
-// }
-
-// export default function PaymentForm({ ideaId }: Props) {
-//   const handleCheckout = async () => {
-//     const res = await createCheckoutSession(ideaId);
-
-//     if (res.success) {
-//       window.location.href = res.data.url;
-//     }
-//   };
-
-//   return (
-//     <button
-//       onClick={handleCheckout}
-//       className="rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
-//     >
-//       book now
-//     </button>
-//   );
-// }
 
 
 
-// components/payment/PaymentForm.tsx
 "use client";
 
 import { useState } from "react";
+import { Loader2, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Loader2, CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { createCheckoutSession } from "@/services/payment";
 
-interface PaymentFormProps {
+interface Idea {
+  id: string;
+  title: string;
+  description?: string;
+  price?: number | null;
+  paymentStatus?: "FREE" | "PAID";
+  images?: string[];
+}
+
+interface Props {
+  idea: Idea;
   ideaId: string;
 }
 
-export default function PaymentForm({ ideaId }: PaymentFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
+export default function PaymentForm({ idea, ideaId }: Props) {
+  const [loading, setLoading] = useState(false);
 
-  const handleCheckout = async () => {
-    setIsLoading(true);
+  const handlePayment = async () => {
     try {
-      // আপনার এক্সপ্রেস ব্যাকএন্ডের checkout এন্ডপয়েন্টে রিকোয়েস্ট পাঠানো
-      const res = await fetch(`http://localhost:5000/api/v1/payment/checkout/${ideaId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
-      
-      const result = await res.json();
+      setLoading(true);
+      const res = await createCheckoutSession(ideaId);
 
-      if (result?.success && result?.data?.url) {
-        toast.success("Redirecting to Stripe...");
-        window.location.href = result.data.url; // স্ট্রাইপ পেজে রিডাইরেক্ট
+      // ব্যাকএন্ড থেকে আসা রেসপন্স চেক করা
+      if (res?.data?.url) {
+        window.location.assign(res.data.url);
       } else {
-        toast.error(result?.message || "Failed to initiate payment.");
+        toast.error(res?.message || "Checkout URL not found");
       }
     } catch (error) {
-      toast.error("An error occurred. Please try again.");
+      console.error(error);
+      toast.error("Something went wrong");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto p-6 bg-card rounded-2xl border shadow-sm space-y-4">
-      <div className="flex items-center gap-3 border-b pb-3">
-        <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-lg">
-          <CreditCard className="w-5 h-5" />
-        </div>
-        <div className="text-left">
-          <h4 className="text-sm font-semibold">Stripe Secure Payment</h4>
-          <p className="text-xs text-muted-foreground">Safe & encrypted</p>
-        </div>
-      </div>
+    <div className="container mx-auto max-w-lg px-4 py-10">
+      <Card className="rounded-2xl shadow-lg">
+        <CardContent className="space-y-6 p-8">
+          <div className="text-center">
+            <ShieldCheck className="mx-auto h-10 w-10 text-emerald-600" />
+            <h1 className="mt-3 text-2xl font-bold">Secure Payment</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Complete your payment securely with Stripe.
+            </p>
+          </div>
 
-      <button
-        onClick={handleCheckout}
-        disabled={isLoading}
-        className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3.5 shadow-sm transition disabled:bg-emerald-600/50"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          "Pay with Stripe"
-        )}
-      </button>
+          <div className="rounded-xl border bg-muted/40 p-4 space-y-2">
+            <h2 className="font-semibold text-lg">{idea.title}</h2>
+            <p className="text-sm text-muted-foreground">{idea.description}</p>
+            <div className="pt-2 text-xl font-bold text-emerald-600">
+              {idea.paymentStatus === "PAID" ? `$${idea.price ?? 0}` : "Free"}
+            </div>
+          </div>
+
+          {/* লজিক আপডেট: যদি FREE হয়, তবে বাটনটি ইনভিসিবল না রেখে একটি ডিজেবল বাটন বা মেসেজ দেখান */}
+          {idea.paymentStatus === "PAID" ? (
+            <Button
+              onClick={handlePayment}
+              disabled={loading}
+              className="w-full bg-emerald-600 py-6 text-base font-semibold hover:bg-emerald-700"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Redirecting...
+                </>
+              ) : (
+                <>
+                  <Lock className="mr-2 h-4 w-4" />
+                  Pay Now
+                </>
+              )}
+            </Button>
+          ) : (
+            <div className="rounded-lg bg-green-100 p-4 text-center text-green-700 font-medium">
+              This idea is free. No payment is required.
+            </div>
+          )}
+
+          <p className="text-center text-xs text-muted-foreground">
+            Payments are securely processed by Stripe.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

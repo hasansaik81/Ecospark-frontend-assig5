@@ -23,7 +23,11 @@ const getAuthHeaders = async () => {
  */
 export const getAllCategories = async () => {
   try {
-    const res = await fetch(`${API_URL}/categories`, { cache: "no-store" });
+    const res = await fetch(`${API_URL}/categories`, { cache: "no-store" ,
+     // next:{revalidate:3600}
+    },
+
+    );
     return await res.json();
   } catch (error: any) {
     return { success: false, message: error.message };

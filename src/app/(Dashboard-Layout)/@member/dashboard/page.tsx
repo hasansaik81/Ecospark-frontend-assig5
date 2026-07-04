@@ -35,7 +35,7 @@ export default async function MemberDashboardPage() {
 
   return (
     <div>
-      {/* ক্লায়েন্ট কম্পোনেন্টে সব ডাটা প্রপ্স হিসেবে পাস করা হলো */}
+     
       <MemberDashboardClient
         initialStats={initialStats} 
         initialIdeas={initialIdeas} 
